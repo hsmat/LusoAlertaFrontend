@@ -1,59 +1,111 @@
-import { MapContainer, TileLayer } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import MapControl from "./MapControl";
 
-const bounds = [ //cordenadas da area do porto
-  [40.555476, -9.000239], // South-West corner
-  [41.551844, -7.683809]  // North-East corner
-];
+// Constants defined outside the component so they aren't recreated on every render
+const INITIAL_BOUNDS = [[40.555476, -9.000239], [41.551844, -7.683809]];
+const INITIAL_CENTRE = [40.1598, -7.9842];
+const MUNICIPIO_NAME = "Oliveira do Hospital";
+const BASE_MAP_URL = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
+const BASE_MAP_ATTRIBUTION = 'Tiles &copy; Google';
 
+// Child component to handle programmatic map updates natively in Leaflet
+function MapUpdater({ centre, bounds }) {
+    const map = useMap();
+    
+    useEffect(() => {
+        if (bounds) {
+            map.setMaxBounds(bounds);
+            // Smoothly zooms and pans the map to perfectly fit the new municipality bounds
+            map.fitBounds(bounds); 
+        }
+        if (centre) {
+            map.setView(centre, map.getZoom());
+        }
+    }, [centre, bounds, map]);
+
+    return null;
+}
 
 export default function MapViewer() {
     const [ndvi, setNdvi] = useState(false);
     const [ndviUrl, setNdviUrl] = useState("");
+    const [bounds, setBounds] = useState(INITIAL_BOUNDS);
+    const [centre, setCentre] = useState(INITIAL_CENTRE);
 
     useEffect(() => {
-        // Fetch the Earth Engine tile URL only when NDVI is toggled on
+        let ignore = false;
+
+        fetch("/borders.geojson")
+            .then((result) => result.json())
+            .then((data) => {
+                if (!ignore) {
+                    const areaMunicipio = data.features.find(
+                        (f) => f.properties.municipio === MUNICIPIO_NAME
+                    );
+                    
+                    if (areaMunicipio) {
+                    const feature = L.geoJSON(areaMunicipio);
+                    const calculatedBounds = feature.getBounds();
+                    const calculatedCenter = calculatedBounds.getCenter();
+                    
+                    setBounds([
+                        [calculatedBounds.getSouthWest().lat, calculatedBounds.getSouthWest().lng],
+                        [calculatedBounds.getNorthEast().lat, calculatedBounds.getNorthEast().lng]
+                    ]);
+                    setCentre([calculatedCenter.lat, calculatedCenter.lng]);
+                    }
+                }
+            })
+            .catch(console.error);
+
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        let ignore = false;
+
         if (ndvi && !ndviUrl) {
             fetch("http://localhost:3000/mapid")
                 .then((res) => res.json())
                 .then((data) => {
+                    if (!ignore) {
                     setNdviUrl(data.url);
+                    }
                 })
                 .catch(console.error);
         }
+
+        return () => {
+            ignore = true;
+        };
     }, [ndvi, ndviUrl]);
 
-    //google satellite as an alternative base map
-    const baseMapUrl = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
-    const baseMapAttribution = 'Tiles &copy; Google';
-
-    // Use arcgis as a reliable base map.
-    // const baseMapUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-    // const baseMapAttribution = 'Tiles &copy; Esri';
-    
-
-    // Switch between the base map and the fetched NDVI layer URL
-    const tileUrl = ndvi ? ndviUrl : baseMapUrl;
+    const tileUrl = ndvi ? ndviUrl : BASE_MAP_URL;
+    const attribution = ndvi ? '&copy; Google Earth Engine, LusoAlerta' : BASE_MAP_ATTRIBUTION;
 
     return (
         <MapContainer
-        center={[40.1598, -7.9842]}
-        zoom={16} 
-        minZoom={9}
-        maxZoom={18}          
-        style={{ height: "500px", width: "100%" }}
-        maxBounds={bounds}
-        maxBoundsViscosity={1.0}
+            center={INITIAL_CENTRE}
+            zoom={16} 
+            minZoom={9}
+            maxZoom={17}          
+            style={{ height: "500px", width: "100%" }}
+            maxBounds={INITIAL_BOUNDS}
+            maxBoundsViscosity={1.0}
         >
-        {/* Only render if we have a valid URL to avoid broken image requests */}
+        <MapUpdater centre={centre} bounds={bounds} />
+            
         {tileUrl && (
             <TileLayer
                 key={tileUrl}
                 url={tileUrl}
-                tms={false} // Both OSM and Earth Engine tiles use standard XYZ (tms=false)
-                attribution={ndvi ? '&copy; Google Earth Engine, LusoAlerta' : baseMapAttribution}
+                tms={false}
+                attribution={attribution}
             />
         )}
         <MapControl onToggle={() => setNdvi((s) => !s)} />
