@@ -1,5 +1,5 @@
 import SideMenu from './SideMenu.jsx';
-import MapViewer from './MapViewer2.jsx';
+import MapViewer from './MapViewer.jsx';
 import CreatePOISideMenu from './CreatePOISideMenu.jsx';
 import './Dashboard.css';
 import { Navigate } from "react-router-dom";
