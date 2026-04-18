@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, useMap, GeoJSON } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MapControl from "./MapControl";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Constants defined outside the component so they aren't recreated on every render
 const INITIAL_BOUNDS = [[40.555476, -9.000239], [41.551844, -7.683809]];
@@ -11,32 +13,19 @@ const MUNICIPIO_NAME = "Oliveira do Hospital";
 const BASE_MAP_URL = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
 const BASE_MAP_ATTRIBUTION = 'Tiles &copy; Google';
 
-function createMaskGeoJson(features) {
-    // 1. Create a massive bounding box covering the world [longitude, latitude]
-    const worldRing = [
-        [-360, 90], [-360, -90], [360, -90], [360, 90], [-360, 90]
-    ];
+L.Icon.Default.mergeOptions({
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
+});
 
-    const rings = [];
-
-    features.forEach(feature => {
-        if (feature.geometry.type === "Polygon") {
-            rings.push(...feature.geometry.coordinates);
-        } else if (feature.geometry.type === "MultiPolygon") {
-            feature.geometry.coordinates.forEach(polygon => {
-                rings.push(...polygon);
-            });
+function MapRightClick({ onRightClick }) {
+    useMapEvents({
+        contextmenu(e) {
+            onRightClick(e.latlng);
         }
     });
 
-    return {
-        type: "Feature",
-        properties: {},
-        geometry: {
-            type: "Polygon",
-            coordinates: [worldRing, ...rings]
-        }
-    };
+    return null;
 }
 
 // Child component to handle programmatic map updates natively in Leaflet
@@ -57,12 +46,38 @@ function MapUpdater({ centre, bounds }) {
     return null;
 }
 
-export default function MapViewer() {
+export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, setSideMenuType }) {
     const [ndvi, setNdvi] = useState(false);
     const [ndviUrl, setNdviUrl] = useState("");
     const [bounds, setBounds] = useState(INITIAL_BOUNDS);
     const [centre, setCentre] = useState(INITIAL_CENTRE);
-    const [geoJsonData, setGeoJsonData] = useState(null);
+    const [pois, setPois] = useState([]);
+    const [clickedPos, setClickedPos] = useState(null);
+
+    useEffect(() => {
+        const fetchPOIs = async () => {
+            try {
+                const userId = localStorage.getItem("userId");
+                const url = ownPOIOnly ? `http://localhost:3000/poi?userId=${userId}` : "http://localhost:3000/poi";
+                const res = await fetch(url);
+                
+                const data = await res.json();
+
+                if (data.success) {
+                    setPois(data.poi);
+                }
+            } catch (err) {
+                //erro?
+            }
+        };
+
+        if (showPOI) {
+            fetchPOIs();
+        } else {
+            setPois([]);
+        }
+
+    }, [showPOI, ownPOIOnly]);
 
     useEffect(() => {
         let ignore = false;
@@ -127,30 +142,39 @@ export default function MapViewer() {
             maxBounds={INITIAL_BOUNDS}
             maxBoundsViscosity={1.0}
         >
-        <MapUpdater centre={centre} bounds={bounds} />
-            
-        {tileUrl && (
-            <TileLayer
-                key={tileUrl}
-                url={tileUrl}
-                tms={false}
-                attribution={attribution}
-            />
-        )}
-
-            {geoJsonData && (
-                <GeoJSON 
-                    data={geoJsonData} 
-                    style={{
-                        color: "#ff7800",    
-                        weight: 3,           
-                        fillColor: "#000000",
-                        fillOpacity: 0.6     
-                    }}
+            <MapUpdater centre={centre} bounds={bounds} />
+                
+            {tileUrl && (
+                <TileLayer
+                    key={tileUrl}
+                    url={tileUrl}
+                    tms={false}
+                    attribution={attribution}
                 />
             )}
+            <MapControl onToggle={() => setNdvi((s) => !s)} />
+            
+            {pois.map((poi, index) => (
+                <Marker key={index} position={[poi.latitude, poi.longitude]}>
+                    <Popup>{poi.description}</Popup>
+                </Marker>
+            ))}
 
-        <MapControl onToggle={() => setNdvi((s) => !s)} />
+            <MapRightClick onRightClick={setClickedPos} />
+
+            {clickedPos && (
+                <Popup position={clickedPos} onClose={() => setClickedPos(null)}>
+                    <div>
+                        <button onClick={() => {
+                            setSelectedLocation(clickedPos);
+                            setSideMenuType("createPOI");
+                            setClickedPos(null);
+                        }}>
+                            Criar Ponto de Interesse
+                        </button>
+                    </div>
+                </Popup>
+            )}
         </MapContainer>
     );
 }

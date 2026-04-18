@@ -1,0 +1,14 @@
+.container {
+    display: flex;
+    width: 100%;
+}
+
+.sidebar {
+    width: 300px;
+    background: #ff9898;
+}
+
+.content {
+    flex: 1;
+    background: #ececec;
+}
