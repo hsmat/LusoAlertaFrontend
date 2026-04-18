@@ -1,0 +1,100 @@
+/* 1. The Centered Login Card 
+   Targets the first div inside #root ONLY if it's not the dashboard container 
+*/
+#root > div:not(.container) {
+  background: var(--color-surface);
+  padding: 48px 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  width: 90%;
+  max-width: 400px;
+
+  /* Absolute Centering on the screen */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Internal alignment */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* 2. The Heading */
+#root > div:not(.container) h2 {
+  margin: 0 0 24px 0;
+  color: var(--color-text-main);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+/* 3. The Form Container */
+#root > div:not(.container) form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Creates perfect spacing between inputs */
+}
+
+/* Hide the hardcoded <br> tags so Flexbox gap handles the spacing perfectly */
+#root > div:not(.container) form br {
+  display: none;
+}
+
+/* 4. The Inputs */
+#root > div:not(.container) form input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--color-text-main);
+  background-color: var(--color-bg-main);
+  transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+  outline: none;
+}
+
+/* Input Focus State (Glows with your primary color) */
+#root > div:not(.container) form input:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(255, 152, 152, 0.2); /* Soft pink glow */
+}
+
+/* 5. The Login Button */
+#root > div:not(.container) form button {
+  margin-top: 8px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-speed) ease;
+  font-family: inherit;
+}
+
+#root > div:not(.container) form button:hover {
+  background-color: var(--color-primary-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+#root > div:not(.container) form button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 6. The Paragraph (For future error messages) */
+#root > div:not(.container) p {
+  margin: 16px 0 0 0;
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+  min-height: 20px; /* Reserves space so the card doesn't jump if text appears */
+}

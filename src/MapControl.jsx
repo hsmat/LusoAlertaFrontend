@@ -9,12 +9,14 @@ export default function MapControl({ onToggle }) {
     const control = L.control({ position: "topright" });
 
     control.onAdd = () => {
-      const div = L.DomUtil.create("div", "leaflet-bar");
-      div.style.background = "white";
-      div.style.padding = "5px";
-      div.style.cursor = "pointer";
-      div.innerHTML = "NDVI";
-      div.onclick = onToggle;
+      const div = L.DomUtil.create("div", "leaflet-bar custom-vci-control");
+      div.innerHTML = "VCI";
+
+      L.DomEvent.on(div, 'click', function (e) {
+        L.DomEvent.stopPropagation(e); 
+        div.classList.toggle("active");
+        if (onToggle) onToggle();
+      });
 
       L.DomEvent.disableClickPropagation(div);
 

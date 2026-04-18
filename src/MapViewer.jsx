@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MapControl from "./MapControl";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
+import customMarkerImage from "./assets/logo_lusoAlerta.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Constants defined outside the component so they aren't recreated on every render
@@ -14,9 +14,37 @@ const BASE_MAP_URL = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
 const BASE_MAP_ATTRIBUTION = 'Tiles &copy; Google';
 
 L.Icon.Default.mergeOptions({
-    iconUrl: markerIcon,
+    iconUrl: customMarkerImage,
     shadowUrl: markerShadow,
 });
+
+function createMaskGeoJson(features) {
+    // 1. Create a massive bounding box covering the world [longitude, latitude]
+    const worldRing = [
+        [-360, 90], [-360, -90], [360, -90], [360, 90], [-360, 90]
+    ];
+
+    const rings = [];
+
+    features.forEach(feature => {
+        if (feature.geometry.type === "Polygon") {
+            rings.push(...feature.geometry.coordinates);
+        } else if (feature.geometry.type === "MultiPolygon") {
+            feature.geometry.coordinates.forEach(polygon => {
+                rings.push(...polygon);
+            });
+        }
+    });
+
+    return {
+        type: "Feature",
+        properties: {},
+        geometry: {
+            type: "Polygon",
+            coordinates: [worldRing, ...rings]
+        }
+    };
+}
 
 function MapRightClick({ onRightClick }) {
     useMapEvents({
@@ -53,6 +81,7 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
     const [centre, setCentre] = useState(INITIAL_CENTRE);
     const [pois, setPois] = useState([]);
     const [clickedPos, setClickedPos] = useState(null);
+    const [geoJsonData, setGeoJsonData] = useState(null);
 
     useEffect(() => {
         const fetchPOIs = async () => {
@@ -101,7 +130,6 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
                         ]);
                         setCentre([calculatedCenter.lat, calculatedCenter.lng]);
                         
-                        // NEW: Generate and save the inverted mask instead of the raw feature
                         const maskedFeature = createMaskGeoJson(areaMunicipio);
                         setGeoJsonData(maskedFeature);
                     }
@@ -129,27 +157,43 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
         return () => { ignore = true; };
     }, [ndvi, ndviUrl]);
 
-    const tileUrl = ndvi ? ndviUrl : BASE_MAP_URL;
-    const attribution = ndvi ? '&copy; Google Earth Engine, LusoAlerta' : BASE_MAP_ATTRIBUTION;
-
     return (
         <MapContainer
             center={INITIAL_CENTRE}
             zoom={16} 
             minZoom={10}
             maxZoom={18}          
-            style={{ height: "500px", width: "100%" }}
+            style={{ height: "100%", width: "100%" }}
             maxBounds={INITIAL_BOUNDS}
             maxBoundsViscosity={1.0}
         >
             <MapUpdater centre={centre} bounds={bounds} />
                 
-            {tileUrl && (
+            <TileLayer
+                url={BASE_MAP_URL}
+                attribution={BASE_MAP_ATTRIBUTION}
+                zIndex={0} 
+            />
+            {ndvi && ndviUrl && (
                 <TileLayer
-                    key={tileUrl}
-                    url={tileUrl}
+                    key={ndviUrl}
+                    url={ndviUrl}
                     tms={false}
-                    attribution={attribution}
+                    attribution='&copy; Google Earth Engine, LusoAlerta'
+                    transparent={true} 
+                    opacity={0.7}      
+                    zIndex={10}        
+                />
+            )}
+            {geoJsonData && (
+                <GeoJSON 
+                    data={geoJsonData} 
+                    style={{
+                        color: "#ff7800",    
+                        weight: 3,           
+                        fillColor: "#000000",
+                        fillOpacity: 0.6     
+                    }}
                 />
             )}
             <MapControl onToggle={() => setNdvi((s) => !s)} />
