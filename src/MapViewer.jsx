@@ -7,7 +7,6 @@ import customMarkerImage from "./assets/logo_lusoAlerta.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Constants defined outside the component so they aren't recreated on every render
-const INITIAL_BOUNDS = [[40.555476, -9.000239], [41.551844, -7.683809]];
 const INITIAL_CENTRE = [40.1598, -7.9842];
 const MUNICIPIO_NAME = "Oliveira do Hospital";
 const BASE_MAP_URL = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
@@ -62,11 +61,15 @@ function MapUpdater({ centre, bounds }) {
     
     useEffect(() => {
         if (bounds) {
+            if (centre) {
+                map.flyTo(centre, 14)
+            }
             map.setMaxBounds(bounds);
             // Smoothly zooms and pans the map to perfectly fit the new municipality bounds
             map.fitBounds(bounds); 
+            map.setMinZoom(12);
         }
-        if (centre) {
+        if (centre && !bounds) {
             map.setView(centre, map.getZoom());
         }
     }, [centre, bounds, map]);
@@ -77,8 +80,8 @@ function MapUpdater({ centre, bounds }) {
 export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, setSideMenuType }) {
     const [ndvi, setNdvi] = useState(false);
     const [ndviUrl, setNdviUrl] = useState("");
-    const [bounds, setBounds] = useState(INITIAL_BOUNDS);
-    const [centre, setCentre] = useState(INITIAL_CENTRE);
+    const [bounds, setBounds] = useState(null);
+    const [centre, setCentre] = useState(null);
     const [pois, setPois] = useState([]);
     const [clickedPos, setClickedPos] = useState(null);
     const [geoJsonData, setGeoJsonData] = useState(null);
@@ -160,11 +163,11 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
     return (
         <MapContainer
             center={INITIAL_CENTRE}
-            zoom={16} 
-            minZoom={10}
+            zoom={6} 
+            minZoom={6}
             maxZoom={18}          
             style={{ height: "100%", width: "100%" }}
-            maxBounds={INITIAL_BOUNDS}
+            maxBounds={bounds}
             maxBoundsViscosity={1.0}
         >
             <MapUpdater centre={centre} bounds={bounds} />
