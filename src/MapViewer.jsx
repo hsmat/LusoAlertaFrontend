@@ -8,7 +8,6 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 // Constants defined outside the component so they aren't recreated on every render
 const INITIAL_CENTRE = [40.1598, -7.9842];
-const MUNICIPIO_NAME = "Oliveira do Hospital";
 const BASE_MAP_URL = "http://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}";
 const BASE_MAP_ATTRIBUTION = 'Tiles &copy; Google';
 
@@ -61,6 +60,7 @@ function MapUpdater({ centre, bounds }) {
     
     useEffect(() => {
         if (bounds) {
+            map.setMaxBounds(null); // Libera os limites antigos antes de mover
             if (centre) {
                 map.flyTo(centre, 14)
             }
@@ -77,7 +77,35 @@ function MapUpdater({ centre, bounds }) {
     return null;
 }
 
-export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, setSideMenuType }) {
+function POIPopupContent({ poi, setSelectedPoiId, setSideMenuType }) {
+    const map = useMap();
+    
+    return (
+        <div>
+            <strong>{poi.title}</strong>
+            <button
+                type="button"
+                onClick={() => {
+                    setSelectedPoiId(poi.id);
+                    setSideMenuType("POIDetails");
+                    map.closePopup(); // Fecha o popup atual
+                }}
+            >
+                Ver detalhes
+            </button>
+        </div>
+    );
+}
+
+export default function MapViewer({ 
+    showPOI, 
+    ownPOIOnly, 
+    setSelectedLocation, 
+    setSelectedPoiId, 
+    setSideMenuType, 
+    municipality,
+    refreshTrigger 
+}) {
     const [ndvi, setNdvi] = useState(false);
     const [ndviUrl, setNdviUrl] = useState("");
     const [bounds, setBounds] = useState(null);
@@ -109,17 +137,18 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
             setPois([]);
         }
 
-    }, [showPOI, ownPOIOnly]);
+    }, [showPOI, ownPOIOnly, refreshTrigger]);
 
     useEffect(() => {
         let ignore = false;
 
+        setGeoJsonData(null); // Limpa a borda anterior imediatamente ao trocar de município
         fetch("/borders.geojson")
             .then((result) => result.json())
             .then((data) => {
                 if (!ignore) {
                     const areaMunicipio = data.features.filter(
-                        (f) => f.properties.municipio === MUNICIPIO_NAME
+                        (f) => f.properties.municipio === municipality
                     );
                     
                     if (areaMunicipio.length > 0) {
@@ -141,7 +170,7 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
             .catch(console.error);
 
         return () => { ignore = true; };
-    }, []);
+    }, [municipality]);
 
     useEffect(() => {
         let ignore = false;
@@ -167,8 +196,6 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
             minZoom={6}
             maxZoom={18}          
             style={{ height: "100%", width: "100%" }}
-            maxBounds={bounds}
-            maxBoundsViscosity={1.0}
         >
             <MapUpdater centre={centre} bounds={bounds} />
                 
@@ -190,6 +217,7 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
             )}
             {geoJsonData && (
                 <GeoJSON 
+                    key={municipality}
                     data={geoJsonData} 
                     style={{
                         color: "#ff7800",    
@@ -203,7 +231,13 @@ export default function MapViewer({ showPOI, ownPOIOnly, setSelectedLocation, se
             
             {pois.map((poi, index) => (
                 <Marker key={index} position={[poi.latitude, poi.longitude]}>
-                    <Popup>{poi.description}</Popup>
+                    <Popup>
+                        <POIPopupContent 
+                            poi={poi} 
+                            setSelectedPoiId={setSelectedPoiId} 
+                            setSideMenuType={setSideMenuType} 
+                        />
+                    </Popup>
                 </Marker>
             ))}
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
     
-export default function CreatePOISideMenu({ location, onGoBack }) {
+export default function CreatePOISideMenu({ location, onGoBack, onPoiCreated }) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [isPublic, setIsPublic] = useState(false);
@@ -30,8 +30,7 @@ export default function CreatePOISideMenu({ location, onGoBack }) {
             const data = await res.json();
 
             if (data.success) {
-                onGoBack();
-                //atualizar poi no mapa
+                onPoiCreated();
             }
 
         } catch (err) {

@@ -1,7 +1,35 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnly }) {
+export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnly, municipality, setMunicipality }) {
+    const [municipalities, setMunicipalities] = useState([]);
     const navigate = useNavigate();
+    const userId = localStorage.getItem('userId');
+
+    useEffect(() => {
+        const fetchMunicipalities = async () => {
+            try {
+                const res = await fetch(`http://localhost:3000/municipality?userId=${userId}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    setMunicipalities(data.municipalities);
+                    
+                    // Automatically select the first municipality if none is currently selected
+                    if (data.municipalities.length > 0 && !municipality) {
+                        setMunicipality(data.municipalities[0].name);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch municipalities:", error);
+            }
+        };
+
+        if (userId) {
+            fetchMunicipalities();
+        }
+    }, [userId, setMunicipality, municipality]);
+
     const handleLogout = () => {
         localStorage.removeItem('userId');
         navigate("/login");
@@ -9,7 +37,7 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
 
     return (
         <div className="side-menu">
-            <p>Bem vindo, utilizador {localStorage.getItem('userId')}!</p>
+            <p>Bem vindo, utilizador {userId}!</p>
             <label>
                 <input
                     type="checkbox"
@@ -25,6 +53,18 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
                     onChange={(e) => setOwnPOIOnly(e.target.checked)}
                 />
                 Apenas os meus
+            </label>
+            <label>
+                <select 
+                    value={municipality || ""} 
+                    onChange={(e) => setMunicipality(e.target.value)}
+                >
+                    {municipalities.map((m, index) => (
+                        <option key={index} value={m.name}>
+                            {m.name}
+                        </option>
+                    ))}
+                </select>
             </label>
             <button onClick={handleLogout} className="logout-btn">
                 Logout
