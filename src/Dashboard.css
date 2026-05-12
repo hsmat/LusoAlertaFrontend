@@ -269,6 +269,49 @@
   transform: translateY(1px);
 }
 
+.custom-vci-control.loading {
+  opacity: 0.8;
+  cursor: wait;
+  animation: pulseLoading 1.5s infinite;
+}
+
+@keyframes pulseLoading {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* 6. Custom Select Dropdown */
+.custom-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  outline: none;
+  cursor: pointer;
+  appearance: none; /* Hides default OS arrow */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232d3748' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  transition: all var(--transition-speed) ease;
+}
+
+.custom-select:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.custom-select:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+}
+
 /* While specific selectors depend on your exact map library, here is a common way to achieve this visually stunning change with derived values: */
 .leaflet-popup-content-wrapper, /* Targets the main box */
 .leaflet-popup-tip {           /* Targets the pointer tail */

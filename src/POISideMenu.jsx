@@ -7,12 +7,15 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
     const [isOwner, setIsOwner] = useState(false);
 
     useEffect(() => {
+        let ignore = false;
+        const controller = new AbortController();
+
         const fetchPOI = async () => {
             try {
-                const res = await fetch(`http://localhost:3000/poi?poiId=${poiId}`);
+                const res = await fetch(`http://localhost:3000/poi?poiId=${poiId}`, { signal: controller.signal });
                 const data = await res.json();
                 
-                if (data.success && data.poi.length > 0) {
+                if (!ignore && data.success && data.poi.length > 0) {
                     const poi = data.poi[0];
                     setTitle(poi.title);
                     setDescription(poi.description);
@@ -24,13 +27,20 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
                     }
                 }
             } catch (err) {
-                console.error("Erro ao carregar detalhes do POI:", err);
+                if (err.name !== "AbortError") {
+                    console.error("Erro ao carregar detalhes do POI:", err);
+                }
             }
         };
 
         if (poiId) {
             fetchPOI();
         }
+
+        return () => {
+            ignore = true;
+            controller.abort();
+        };
     }, [poiId]);
 
     const handleUpdate = async (e) => {

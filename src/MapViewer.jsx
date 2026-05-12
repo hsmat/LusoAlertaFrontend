@@ -60,16 +60,16 @@ function MapUpdater({ centre, bounds }) {
     
     useEffect(() => {
         if (bounds) {
-            map.setMaxBounds(null); // Libera os limites antigos antes de mover
-            if (centre) {
-                map.flyTo(centre, 14)
-            }
-            map.setMaxBounds(bounds);
-            // Smoothly zooms and pans the map to perfectly fit the new municipality bounds
-            map.fitBounds(bounds); 
-            map.setMinZoom(12);
-        }
-        if (centre && !bounds) {
+            map.setMaxBounds(null); 
+            
+            map.flyToBounds(bounds, { duration: 1.5 });
+            
+            map.once('moveend', () => {
+                const leafletBounds = L.latLngBounds(bounds);
+                map.setMaxBounds(leafletBounds);
+                map.setMinZoom(12);
+            });
+        } else if (centre) {
             map.setView(centre, map.getZoom());
         }
     }, [centre, bounds, map]);
@@ -113,21 +113,25 @@ export default function MapViewer({
     const [pois, setPois] = useState([]);
     const [clickedPos, setClickedPos] = useState(null);
     const [geoJsonData, setGeoJsonData] = useState(null);
+    const [tilesLoading, setTilesLoading] = useState(false);
 
     useEffect(() => {
+        let ignore = false;
+        const controller = new AbortController();
+
         const fetchPOIs = async () => {
             try {
                 const userId = localStorage.getItem("userId");
                 const url = ownPOIOnly ? `http://localhost:3000/poi?userId=${userId}` : "http://localhost:3000/poi";
-                const res = await fetch(url);
+                const res = await fetch(url, { signal: controller.signal });
                 
                 const data = await res.json();
 
-                if (data.success) {
+                if (!ignore && data.success) {
                     setPois(data.poi);
                 }
             } catch (err) {
-                //erro?
+                if (err.name !== "AbortError") console.error(err);
             }
         };
 
@@ -137,12 +141,19 @@ export default function MapViewer({
             setPois([]);
         }
 
+        return () => {
+            ignore = true;
+            controller.abort();
+        };
+
     }, [showPOI, ownPOIOnly, refreshTrigger]);
 
     useEffect(() => {
         let ignore = false;
 
         setGeoJsonData(null); // Limpa a borda anterior imediatamente ao trocar de município
+        setNdvi(false);       // Turns off the VCI layer when the location changes
+        setNdviUrl("");       // Clears the previous GEE tile URL
         fetch("/borders.geojson")
             .then((result) => result.json())
             .then((data) => {
@@ -174,19 +185,27 @@ export default function MapViewer({
 
     useEffect(() => {
         let ignore = false;
+        const controller = new AbortController();
 
         if (ndvi && !ndviUrl) {
-            fetch("http://localhost:3000/mapid")
+            fetch(`http://localhost:3000/mapid`, { signal: controller.signal })
                 .then((res) => res.json())
                 .then((data) => {
                     if (!ignore) {
                     setNdviUrl(data.url);
                     }
                 })
-                .catch(console.error);
+                .catch((err) => {
+                    if (err.name !== 'AbortError') {
+                        console.error(err);
+                    }
+                });
         }
 
-        return () => { ignore = true; };
+        return () => { 
+            ignore = true; 
+            controller.abort(); 
+        };
     }, [ndvi, ndviUrl]);
 
     return (
@@ -212,7 +231,14 @@ export default function MapViewer({
                     attribution='&copy; Google Earth Engine, LusoAlerta'
                     transparent={true} 
                     opacity={0.7}      
-                    zIndex={10}        
+                    zIndex={10}
+                    maxNativeZoom={13}
+                    updateWhenIdle={true}
+                    keepBuffer={2}
+                    eventHandlers={{
+                        loading: () => setTilesLoading(true),
+                        load: () => setTilesLoading(false)
+                    }}
                 />
             )}
             {geoJsonData && (
@@ -227,7 +253,11 @@ export default function MapViewer({
                     }}
                 />
             )}
-            <MapControl onToggle={() => setNdvi((s) => !s)} />
+            <MapControl 
+                onToggle={() => setNdvi((s) => !s)} 
+                isActive={ndvi}
+                isLoading={ndvi && (!ndviUrl || tilesLoading)} // It is loading ONLY if ON, and missing URL or downloading tiles
+            />
             
             {pois.map((poi, index) => (
                 <Marker key={index} position={[poi.latitude, poi.longitude]}>
