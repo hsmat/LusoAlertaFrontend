@@ -32,7 +32,7 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
 
     const handleLogout = () => {
         localStorage.removeItem('userId');
-        navigate("/login");
+        navigate("/");
     };
 
     return (
