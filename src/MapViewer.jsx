@@ -67,7 +67,7 @@ function MapUpdater({ centre, bounds }) {
             map.once('moveend', () => {
                 const leafletBounds = L.latLngBounds(bounds);
                 map.setMaxBounds(leafletBounds);
-                map.setMinZoom(12);
+                map.setMinZoom(map.getBoundsZoom(leafletBounds));
             });
         } else if (centre) {
             map.setView(centre, map.getZoom());
@@ -232,9 +232,10 @@ export default function MapViewer({
                     transparent={true} 
                     opacity={0.7}      
                     zIndex={10}
-                    maxNativeZoom={13}
-                    updateWhenIdle={true}
-                    keepBuffer={2}
+                    maxNativeZoom={14}
+                    bounds={bounds}
+                    keepBuffer={0}
+                    updateWhenZooming={false}
                     eventHandlers={{
                         loading: () => setTilesLoading(true),
                         load: () => setTilesLoading(false)
@@ -249,7 +250,7 @@ export default function MapViewer({
                         color: "#ff7800",    
                         weight: 3,           
                         fillColor: "#000000",
-                        fillOpacity: 0.6     
+                        fillOpacity: 0.7     
                     }}
                 />
             )}
