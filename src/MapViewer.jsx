@@ -152,8 +152,7 @@ export default function MapViewer({
         let ignore = false;
 
         setGeoJsonData(null); // Limpa a borda anterior imediatamente ao trocar de município
-        setNdvi(false);       // Turns off the VCI layer when the location changes
-        setNdviUrl("");       // Clears the previous GEE tile URL
+        setNdvi(false);       // Clears the previous GEE tile URL
         fetch("/borders.geojson")
             .then((result) => result.json())
             .then((data) => {
@@ -232,7 +231,7 @@ export default function MapViewer({
                     transparent={true} 
                     opacity={0.7}      
                     zIndex={10}
-                    maxNativeZoom={14}
+                    maxNativeZoom={14} 
                     bounds={bounds}
                     keepBuffer={0}
                     updateWhenZooming={false}
