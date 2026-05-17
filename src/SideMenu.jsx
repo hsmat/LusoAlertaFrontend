@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnly, municipality, setMunicipality }) {
+export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnly, municipality, setMunicipality, municipalityArea }) {
     const [municipalities, setMunicipalities] = useState([]);
+    const [municipalityStats, setMunicipalityStats] = useState(null);
+    const [statsLoading, setStatsLoading] = useState(false);
     const navigate = useNavigate();
     const userId = localStorage.getItem('userId');
 
@@ -29,6 +31,29 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
             fetchMunicipalities();
         }
     }, [userId, setMunicipality]); // Removed 'municipality' to prevent re-fetching on dropdown change
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            if (!municipality) return;
+            setStatsLoading(true);
+            try {
+                const res = await fetch(`http://localhost:3000/municipality/stats?name=${encodeURIComponent(municipality)}`);
+                const data = await res.json();
+                if (data.success) {
+                    setMunicipalityStats(data.stats);
+                } else {
+                    setMunicipalityStats(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch municipality stats:", error);
+                setMunicipalityStats(null);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [municipality]);
 
     const handleLogout = () => {
         localStorage.removeItem('userId');
@@ -67,7 +92,21 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
                 ))}
             </select>
 
-            <button onClick={handleLogout} className="logout-btn">
+            <div className="stats-box">
+                <h4>Estatísticas de Risco</h4>
+                {statsLoading ? (
+                    <p>A carregar estatísticas do Earth Engine...</p>
+                ) : municipalityStats ? (
+                    <div>
+                        <p><strong>Área do Município:</strong> {municipalityArea ? municipalityArea.toFixed(2) + " ha" : "N/A"}</p>
+                        <p><strong>Risco Médio do Município:</strong> {municipalityStats.meanVci}</p>
+                    </div>
+                ) : (
+                    <p>Sem dados disponíveis.</p>
+                )}
+            </div>
+
+            <button onClick={handleLogout} className="logout-btn" style={{ marginTop: '15px' }}>
                 Logout
             </button>
         </div>

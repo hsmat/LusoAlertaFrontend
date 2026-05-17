@@ -10,6 +10,7 @@ export default function Dashboard() {
     const [showPOI, setShowPOI] = useState(false);
     const [ownPOIOnly, setOwnPOIOnly] = useState(false);
     const [municipality, setMunicipality] = useState(null);
+    const [municipalityArea, setMunicipalityArea] = useState(null);
     const [sideMenuType, setSideMenuType] = useState("default");
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedPOIId, setSelectedPOIId] = useState(null);
@@ -55,6 +56,7 @@ export default function Dashboard() {
                         setOwnPOIOnly={setOwnPOIOnly}
                         municipality={municipality}
                         setMunicipality={setMunicipality}
+                        municipalityArea={municipalityArea}
                     />
                 )}
 
@@ -89,6 +91,7 @@ export default function Dashboard() {
                     setSelectedPoiId={setSelectedPOIId}
                     setSideMenuType={setSideMenuType}
                     municipality={municipality}
+                    setMunicipalityArea={setMunicipalityArea}
                     refreshTrigger={poiUpdateCounter}
                 />
             </div>

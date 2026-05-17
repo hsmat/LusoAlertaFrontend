@@ -5,6 +5,8 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
     const [description, setDescription] = useState("");
     const [isPublic, setIsPublic] = useState(false);
     const [isOwner, setIsOwner] = useState(false);
+    const [freguesiaInfo, setFreguesiaInfo] = useState(null);
+    const [stats, setStats] = useState({ vci: "Zona urbana ou sem dados", vciTime: null, createdAt: null });
 
     useEffect(() => {
         let ignore = false;
@@ -20,6 +22,14 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
                     setTitle(poi.title);
                     setDescription(poi.description);
                     setIsPublic(poi.public === 1);
+                    if (poi.freguesia && poi.municipio) {
+                        setFreguesiaInfo(`${poi.freguesia}, ${poi.municipio}`);
+                    }
+                    setStats({
+                        vci: poi.local_risk_vci,
+                        vciTime: poi.vci_timestamp,
+                        createdAt: poi.created_at
+                    });
                     
                     const loggedUserId = localStorage.getItem("userId");
                     if (String(poi.creator) === String(loggedUserId)) {
@@ -112,6 +122,19 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
                     disabled={!isOwner}
                 />
                 <label htmlFor="isPublic">Público</label>
+                
+                <div className="stats-box">
+                    {freguesiaInfo && <p><strong>Freguesia:</strong> {freguesiaInfo}</p>}
+                    <p><strong>Risco no Ponto:</strong> {stats.vci || "Zona urbana ou sem dados"}</p>
+                    {stats.vciTime && <p><strong>Cálculo VCI:</strong> {new Date(stats.vciTime).toLocaleString()}</p>}
+                    {stats.createdAt && <p><strong>Criado em:</strong> {new Date(stats.createdAt).toLocaleString()}</p>}
+                    {isOwner && (
+                        <p className="stats-note">
+                            <em>* O valor do Risco VCI original não será alterado.</em>
+                        </p>
+                    )}
+                </div>
+                
                 <br />
                 {isOwner && <button type="submit">Guardar</button>}
                 {isOwner && <button type="button" onClick={handleDelete} style={{ marginBottom: '10px', backgroundColor: 'red', color: 'white' }}>Apagar</button>}

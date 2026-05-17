@@ -77,12 +77,13 @@ function MapUpdater({ centre, bounds }) {
     return null;
 }
 
-function POIPopupContent({ poi, setSelectedPoiId, setSideMenuType }) {
+function POIPopupContent({ poi, setSelectedPoiId, setSideMenuType, ndvi }) {
     const map = useMap();
     
     return (
         <div>
             <strong>{poi.title}</strong>
+            {ndvi && <p style={{ margin: "5px 0" }}>Risco: {poi.local_risk_vci || "N/A"}</p>}
             <button
                 type="button"
                 onClick={() => {
@@ -97,6 +98,43 @@ function POIPopupContent({ poi, setSelectedPoiId, setSideMenuType }) {
     );
 }
 
+function ClickedPointPopup({ clickedPos, setSelectedLocation, setSideMenuType, setClickedPos, ndvi }) {
+    const [risk, setRisk] = useState("Loading...");
+
+    useEffect(() => {
+        if (!ndvi) return;
+        let ignore = false;
+        setRisk("Loading...");
+        fetch(`http://localhost:3000/pixel-risk?lat=${clickedPos.lat}&lng=${clickedPos.lng}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!ignore && data.success) {
+                    setRisk(data.vci);
+                } else if (!ignore) {
+                    setRisk("N/A");
+                }
+            })
+            .catch(() => {
+                if (!ignore) setRisk("Error");
+            });
+
+        return () => { ignore = true; };
+    }, [clickedPos, ndvi]);
+
+    return (
+        <div>
+            {ndvi && <p style={{ margin: "5px 0", fontWeight: "bold" }}>Risco: {risk}</p>}
+            <button onClick={() => {
+                setSelectedLocation(clickedPos);
+                setSideMenuType("createPOI");
+                setClickedPos(null);
+            }}>
+                Criar Ponto de Interesse
+            </button>
+        </div>
+    );
+}
+
 export default function MapViewer({ 
     showPOI, 
     ownPOIOnly, 
@@ -104,6 +142,7 @@ export default function MapViewer({
     setSelectedPoiId, 
     setSideMenuType, 
     municipality,
+    setMunicipalityArea,
     refreshTrigger 
 }) {
     const [ndvi, setNdvi] = useState(false);
@@ -122,7 +161,12 @@ export default function MapViewer({
         const fetchPOIs = async () => {
             try {
                 const userId = localStorage.getItem("userId");
-                const url = ownPOIOnly ? `http://localhost:3000/poi?userId=${userId}` : "http://localhost:3000/poi";
+                let url = "http://localhost:3000/poi";
+                if (ownPOIOnly && userId) {
+                    url += `?userId=${userId}`;
+                } else if (userId) {
+                    url += `?allForUser=${userId}`;
+                }
                 const res = await fetch(url, { signal: controller.signal });
                 
                 const data = await res.json();
@@ -162,6 +206,8 @@ export default function MapViewer({
                     );
                     
                     if (areaMunicipio.length > 0) {
+                        const totalAreaHa = areaMunicipio.reduce((sum, feature) => sum + (feature.properties.area_ha || 0), 0);
+                        if (setMunicipalityArea) setMunicipalityArea(totalAreaHa);
                         const features = L.geoJSON(areaMunicipio);
                         const calculatedBounds = features.getBounds();
                         const calculatedCenter = calculatedBounds.getCenter();
@@ -174,6 +220,8 @@ export default function MapViewer({
                         
                         const maskedFeature = createMaskGeoJson(areaMunicipio);
                         setGeoJsonData(maskedFeature);
+                    } else {
+                        if (setMunicipalityArea) setMunicipalityArea(null);
                     }
                 }
             })
@@ -266,6 +314,7 @@ export default function MapViewer({
                             poi={poi} 
                             setSelectedPoiId={setSelectedPoiId} 
                             setSideMenuType={setSideMenuType} 
+                            ndvi={ndvi}
                         />
                     </Popup>
                 </Marker>
@@ -275,15 +324,13 @@ export default function MapViewer({
 
             {clickedPos && (
                 <Popup position={clickedPos} onClose={() => setClickedPos(null)}>
-                    <div>
-                        <button onClick={() => {
-                            setSelectedLocation(clickedPos);
-                            setSideMenuType("createPOI");
-                            setClickedPos(null);
-                        }}>
-                            Criar Ponto de Interesse
-                        </button>
-                    </div>
+                    <ClickedPointPopup 
+                        clickedPos={clickedPos}
+                        setSelectedLocation={setSelectedLocation}
+                        setSideMenuType={setSideMenuType}
+                        setClickedPos={setClickedPos}
+                        ndvi={ndvi}
+                    />
                 </Popup>
             )}
         </MapContainer>

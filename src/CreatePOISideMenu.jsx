@@ -1,10 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
     
 export default function CreatePOISideMenu({ location, onGoBack, onPoiCreated }) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [isPublic, setIsPublic] = useState(false);
+    
+    const [risk, setRisk] = useState("A carregar...");
+    const [riskDate, setRiskDate] = useState(null);
+    const [freguesiaInfo, setFreguesiaInfo] = useState(null);
+
+    useEffect(() => {
+        let ignore = false;
+        
+        if (location) {
+            setRisk("A carregar...");
+            setFreguesiaInfo(null);
+            fetch(`http://localhost:3000/pixel-risk?lat=${location.lat}&lng=${location.lng}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!ignore && data.success) {
+                        setRisk(data.vci);
+                        setRiskDate(new Date().toLocaleString());
+                        if (data.freguesia && data.municipio) {
+                            setFreguesiaInfo(`${data.freguesia}, ${data.municipio}`);
+                        }
+                    } else if (!ignore) {
+                        setRisk("Zona urbana ou sem dados");
+                    }
+                })
+                .catch(() => {
+                    if (!ignore) setRisk("Erro");
+                });
+        }
+
+        return () => { ignore = true; };
+    }, [location]);
 
     const createPOI = async (e) => {
         e.preventDefault();
@@ -61,8 +92,15 @@ export default function CreatePOISideMenu({ location, onGoBack, onPoiCreated }) 
                     onChange={(e) => setIsPublic(e.target.checked)}
                 />
                 <label htmlFor="isPublic">Público</label>
+                
+                <div className="stats-box">
+                    {freguesiaInfo && <p><strong>Freguesia:</strong> {freguesiaInfo}</p>}
+                    <p><strong>Risco no Ponto:</strong> {risk}</p>
+                    {riskDate && <p><strong>Cálculo VCI:</strong> {riskDate}</p>}
+                </div>
+                
                 <br />
-                <button type="submit">Criar</button>
+                <button type="submit" disabled={risk === "A carregar..."}>Criar</button>
                 <button type="button" onClick={onGoBack}>
                     Voltar
                 </button>
