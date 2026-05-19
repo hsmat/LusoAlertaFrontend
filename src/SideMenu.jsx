@@ -15,11 +15,12 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
                 const data = await res.json();
                 
                 if (data.success) {
-                    setMunicipalities(data.municipalities);
+                    const sortedMunicipalities = data.municipalities.sort((a, b) => a.name.localeCompare(b.name));
+                    setMunicipalities(sortedMunicipalities);
                     
                     // Automatically select the first municipality if none is currently selected
-                    if (data.municipalities.length > 0) {
-                        setMunicipality(prev => prev || data.municipalities[0].name);
+                    if (sortedMunicipalities.length > 0) {
+                        setMunicipality(prev => prev || sortedMunicipalities[0].name);
                     }
                 }
             } catch (error) {
@@ -99,7 +100,7 @@ export default function SideMenu({ showPOI, setShowPOI, ownPOIOnly, setOwnPOIOnl
                 ) : municipalityStats ? (
                     <div>
                         <p><strong>Área do Município:</strong> {municipalityArea ? municipalityArea.toFixed(2) + " ha" : "N/A"}</p>
-                        <p><strong>Risco Médio do Município:</strong> {municipalityStats.meanVci}</p>
+                        <p><strong>VCI Médio do Município:</strong> {municipalityStats.meanVci}</p>
                     </div>
                 ) : (
                     <p>Sem dados disponíveis.</p>

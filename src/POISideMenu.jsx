@@ -6,7 +6,7 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
     const [isPublic, setIsPublic] = useState(false);
     const [isOwner, setIsOwner] = useState(false);
     const [freguesiaInfo, setFreguesiaInfo] = useState(null);
-    const [stats, setStats] = useState({ vci: "Zona urbana ou sem dados", vciTime: null, createdAt: null });
+    const [stats, setStats] = useState({ vci: "N/A", vciTime: null, createdAt: null });
 
     useEffect(() => {
         let ignore = false;
@@ -125,12 +125,12 @@ export default function POISideMenu({ poiId, onGoBack, onPoiUpdated }) {
                 
                 <div className="stats-box">
                     {freguesiaInfo && <p><strong>Freguesia:</strong> {freguesiaInfo}</p>}
-                    <p><strong>Risco no Ponto:</strong> {stats.vci || "Zona urbana ou sem dados"}</p>
+                    <p><strong>VCI no Ponto:</strong> {stats.vci || "Zona urbana ou sem dados"}</p>
                     {stats.vciTime && <p><strong>Cálculo VCI:</strong> {new Date(stats.vciTime).toLocaleString()}</p>}
                     {stats.createdAt && <p><strong>Criado em:</strong> {new Date(stats.createdAt).toLocaleString()}</p>}
                     {isOwner && (
                         <p className="stats-note">
-                            <em>* O valor do Risco VCI original não será alterado.</em>
+                            <em>* O valor do VCI original não será alterado.</em>
                         </p>
                     )}
                 </div>

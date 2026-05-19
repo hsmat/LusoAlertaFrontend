@@ -26,7 +26,7 @@ export default function CreatePOISideMenu({ location, onGoBack, onPoiCreated }) 
                             setFreguesiaInfo(`${data.freguesia}, ${data.municipio}`);
                         }
                     } else if (!ignore) {
-                        setRisk("Zona urbana ou sem dados");
+                        setRisk("N/A");
                     }
                 })
                 .catch(() => {
@@ -95,7 +95,7 @@ export default function CreatePOISideMenu({ location, onGoBack, onPoiCreated }) 
                 
                 <div className="stats-box">
                     {freguesiaInfo && <p><strong>Freguesia:</strong> {freguesiaInfo}</p>}
-                    <p><strong>Risco no Ponto:</strong> {risk}</p>
+                    <p><strong>VCI no Ponto:</strong> {risk}</p>
                     {riskDate && <p><strong>Cálculo VCI:</strong> {riskDate}</p>}
                 </div>
                 

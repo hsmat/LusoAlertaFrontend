@@ -83,7 +83,7 @@ function POIPopupContent({ poi, setSelectedPoiId, setSideMenuType, ndvi }) {
     return (
         <div>
             <strong>{poi.title}</strong>
-            {ndvi && <p style={{ margin: "5px 0" }}>Risco: {poi.local_risk_vci || "N/A"}</p>}
+            {ndvi && <p style={{ margin: "5px 0" }}>VCI: {poi.local_risk_vci || "N/A"}</p>}
             <button
                 type="button"
                 onClick={() => {
@@ -123,7 +123,7 @@ function ClickedPointPopup({ clickedPos, setSelectedLocation, setSideMenuType, s
 
     return (
         <div>
-            {ndvi && <p style={{ margin: "5px 0", fontWeight: "bold" }}>Risco: {risk}</p>}
+            {ndvi && <p style={{ margin: "5px 0", fontWeight: "bold" }}>VCI: {risk}</p>}
             <button onClick={() => {
                 setSelectedLocation(clickedPos);
                 setSideMenuType("createPOI");
